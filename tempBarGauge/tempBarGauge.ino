@@ -1,0 +1,85 @@
+/*************************************************** 
+  This is a library for our I2C LED Backpacks
+
+  Designed specifically to work with the Adafruit LED 24 Bargraph Backpack
+  ----> http://www.adafruit.com/products/721
+
+  These displays use I2C to communicate, 2 pins are required to 
+  interface. There are multiple selectable I2C addresses. For backpacks
+  with 2 Address Select pins: 0x70, 0x71, 0x72 or 0x73. For backpacks
+  with 3 Address Select pins: 0x70 thru 0x77
+
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.  
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
+
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_MAX31865.h>
+#include "Adafruit_LEDBackpack.h"
+
+//Bar gauge setup
+int numBars = 24;
+Adafruit_24bargraph bar = Adafruit_24bargraph();
+
+//calibration knobs setup
+int scalePot = A0;
+int shiftPot = A1;
+double midTemp = 23.0;
+double tempRange = 3.0;
+
+//RTD setup
+// Use software SPI: CS, DI, DO, CLK
+Adafruit_MAX31865 max = Adafruit_MAX31865(10, 11, 12, 13);
+// use hardware SPI, just pass in the CS pin
+//Adafruit_MAX31865 max = Adafruit_MAX31865(10);
+// The value of the Rref resistor. Use 430.0!
+#define RREF 430.0
+
+void setup() {
+  Serial.begin(115200);
+
+  //init RTD
+  max.begin(MAX31865_3WIRE);  // set to 2WIRE or 4WIRE as necessary
+  
+  //init bar
+  bar.begin(0x70);  // pass in the address
+  for (uint8_t b=0; b<numBars; b++ ){
+    if ((b % 3) == 0)  bar.setBar(b, LED_RED);
+    if ((b % 3) == 1)  bar.setBar(b, LED_YELLOW);
+    if ((b % 3) == 2)  bar.setBar(b, LED_GREEN);
+  }
+  bar.writeDisplay();
+  delay(2000);
+}
+
+
+void loop() {
+  //read temperature
+  uint16_t rtd = max.readRTD();
+  float ratio = rtd;
+  ratio /= 32768;
+  double tempC = max.temperature(100, RREF);
+  Serial.print("Temperature: "); Serial.println(tempC);
+
+  //read calibration knobs
+  
+ double degPerBar = tempRange/numBars;
+ double startTemp = midTemp-0.5*tempRange;
+ for (uint8_t b=0; b<numBars; b++) {
+  if(startTemp+b*degPerBar<=tempC)
+  {
+    bar.setBar(b, LED_RED);
+  }
+  else
+  {
+    bar.setBar(b, LED_OFF); 
+  }
+ }
+ bar.writeDisplay();
+ delay(500);
+}
