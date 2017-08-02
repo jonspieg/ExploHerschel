@@ -20,6 +20,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_MAX31865.h>
+#include <Adafruit_MAX31856.h>
 #include "Adafruit_LEDBackpack.h"
 
 //Bar gauge setup
@@ -33,18 +34,30 @@ double midTemp = 23.0;
 double tempRange = 3.0;
 
 //RTD setup
-// Use software SPI: CS, DI, DO, CLK
+/*// Use software SPI: CS, DI, DO, CLK
 Adafruit_MAX31865 max = Adafruit_MAX31865(10, 11, 12, 13);
 // use hardware SPI, just pass in the CS pin
 //Adafruit_MAX31865 max = Adafruit_MAX31865(10);
 // The value of the Rref resistor. Use 430.0!
 #define RREF 430.0
+*/
+
+// Use software SPI: CS, DI, DO, CLK
+Adafruit_MAX31856 max = Adafruit_MAX31856(10, 11, 12, 13);
+// use hardware SPI, just pass in the CS pin
+//Adafruit_MAX31856 max = Adafruit_MAX31856(10);
+
+
 
 void setup() {
   Serial.begin(115200);
 
-  //init RTD
-  max.begin(MAX31865_3WIRE);  // set to 2WIRE or 4WIRE as necessary
+  //init temp sensor
+  //max.begin(MAX31865_3WIRE);  // set to 2WIRE or 4WIRE as necessary
+
+  max.begin();
+  max.setThermocoupleType(MAX31856_TCTYPE_K);
+  max.setTempFaultThreshholds(0.0, 3000.0);
   
   //init bar
   bar.begin(0x70);  // pass in the address
@@ -60,13 +73,17 @@ void setup() {
 
 void loop() {
   //read temperature
-  uint16_t rtd = max.readRTD();
-  float ratio = rtd;
-  ratio /= 32768;
-  double tempC = max.temperature(100, RREF);
+
+  //double tempC = readTemperatureRTD();
+  double tempC = readTemperatureTC();
+
   Serial.print("Temperature: "); Serial.println(tempC);
 
   //read calibration knobs
+  tempRange = readTempRange();
+  midTemp = readMidTemp();
+  Serial.print("tempRange: "); Serial.println(tempRange);
+  Serial.print("midTemp: "); Serial.println(midTemp);
   
  double degPerBar = tempRange/numBars;
  double startTemp = midTemp-0.5*tempRange;
@@ -81,5 +98,47 @@ void loop() {
   }
  }
  bar.writeDisplay();
- delay(500);
+ delay(50);
 }
+
+//double readTemperatureRTD()
+//{
+//  uint16_t rtd = max.readRTD();
+//  float ratio = rtd;
+//  ratio /= 32768;
+//  return max.temperature(100, RREF);
+//}
+double readTemperatureTC()
+{
+  // Check and print any faults
+  uint8_t fault = max.readFault();
+  if (fault) {
+    if (fault & MAX31856_FAULT_CJRANGE) Serial.println("Cold Junction Range Fault");
+    if (fault & MAX31856_FAULT_TCRANGE) Serial.println("Thermocouple Range Fault");
+    if (fault & MAX31856_FAULT_CJHIGH)  Serial.println("Cold Junction High Fault");
+    if (fault & MAX31856_FAULT_CJLOW)   Serial.println("Cold Junction Low Fault");
+    if (fault & MAX31856_FAULT_TCHIGH)  Serial.println("Thermocouple High Fault");
+    if (fault & MAX31856_FAULT_TCLOW)   Serial.println("Thermocouple Low Fault");
+    if (fault & MAX31856_FAULT_OVUV)    Serial.println("Over/Under Voltage Fault");
+    if (fault & MAX31856_FAULT_OPEN)    Serial.println("Thermocouple Open Fault");
+  }
+  return max.readThermocoupleTemperature();
+}
+double readTempThermistor()
+{
+  return analogRead(A2);
+}
+double readTempRange()
+{
+  return mapf(analogRead(A0), 0, 1023, 0.5, 8);
+}
+double readMidTemp()
+{
+  return mapf(analogRead(A1), 0, 1023, 15, 40);
+}
+
+double mapf(double x, double in_min, double in_max, double out_min, double out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
