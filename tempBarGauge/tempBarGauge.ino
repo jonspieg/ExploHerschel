@@ -52,6 +52,9 @@ Adafruit_MAX31856 max = Adafruit_MAX31856(10, 11, 12, 13);
 void setup() {
   Serial.begin(115200);
 
+   analogReference(EXTERNAL);
+   pinMode(8,OUTPUT);
+
   //init temp sensor
   //max.begin(MAX31865_3WIRE);  // set to 2WIRE or 4WIRE as necessary
 
@@ -74,8 +77,12 @@ void setup() {
 void loop() {
   //read temperature
 
+  double tempC = 0.0;
   //double tempC = readTemperatureRTD();
-  double tempC = readTemperatureTC();
+  if(digitalRead(6))
+    tempC = readTemperatureTC();
+  else
+    tempC = readTempThermistor();
 
   Serial.print("Temperature: "); Serial.println(tempC);
 
@@ -126,7 +133,49 @@ double readTemperatureTC()
 }
 double readTempThermistor()
 {
-  return analogRead(A2);
+  double reading = 0.0;
+  int nMeasurements = 5;
+  int measureAuxPin = 8;
+  digitalWrite(measureAuxPin,HIGH);
+  for(int i=0;i<nMeasurements;++i)
+  {
+    reading += analogRead(A2);
+    delay(5);
+  }
+  digitalWrite(measureAuxPin,LOW);
+  reading = reading/nMeasurements; 
+  return voltageToTemp(reading);
+}
+double voltageToTemp(double analogVoltageReading)
+{
+  // resistance at 25 degrees C
+  const int THERMISTORNOMINAL = 10000;      
+  // temp. for nominal resistance (almost always 25 C)
+  const int TEMPERATURENOMINAL = 25;  
+  // The beta coefficient of the thermistor (usually 3000-4000)
+  const int BCOEFFICIENT = 3950;
+  // the value of the 'other' resistor
+  const int SERIESRESISTOR = 10000;  
+  
+  // convert the value to resistance
+  double resistance = 1023.0 / analogVoltageReading  - 1;
+  resistance = SERIESRESISTOR / resistance;
+  Serial.print("Thermistor resistance "); 
+  Serial.println(resistance);
+ 
+  double steinhart;
+  steinhart = resistance / THERMISTORNOMINAL;     // (R/Ro)
+  steinhart = log(steinhart);                  // ln(R/Ro)
+  steinhart /= BCOEFFICIENT;                   // 1/B * ln(R/Ro)
+  steinhart += 1.0 / (TEMPERATURENOMINAL + 273.15); // + (1/To)
+  steinhart = 1.0 / steinhart;                 // Invert
+  steinhart -= 273.15;                         // convert to C
+ 
+  Serial.print("Temperature "); 
+  Serial.print(steinhart);
+  Serial.println(" *C");
+
+  return steinhart;
 }
 double readTempRange()
 {
