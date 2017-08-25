@@ -41,9 +41,6 @@ Adafruit_MAX31856 max = Adafruit_MAX31856(10, 11, 12, 13);
 void setup() {
   Serial.begin(115200);
 
-  analogReference(EXTERNAL);
-  pinMode(8,OUTPUT);
-
   max.begin();
   max.setThermocoupleType(MAX31856_TCTYPE_K);
   max.setTempFaultThreshholds(0.0, 3000.0);
