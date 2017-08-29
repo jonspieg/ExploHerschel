@@ -23,9 +23,57 @@
 #include <Adafruit_MAX31856.h>
 #include "Adafruit_LEDBackpack.h"
 
+class LongBarGraph
+{
+  private:
+  int m_firsAddr = 0x70;
+  int m_nLEDPerBar = 24;
+  int m_nBars;
+  Adafruit_24bargraph* m_bars;
+  
+  public:
+  LongBarGraph(int nBars)
+  {
+    m_nBars = nBars;
+    m_bars = new Adafruit_24bargraph[m_nBars];
+    for(int i = 0; i < nBars; ++i)
+    {
+      m_bars[i] = Adafruit_24bargraph();  
+    }
+  }
+  //==============================
+  init()
+  {
+    for(int i = 0; i < m_nBars; ++i)
+    {
+      m_bars[i].begin(m_firsAddr+i);
+    }
+  }
+  //==============================
+  setBar(int b, int c)
+  {
+    m_bars[(int)floor(m_nLEDPerBar/b)].setBar(b%m_nLEDPerBar, c);
+  }
+  //
+  writeDisplay()
+  {
+    for(int i = 0; i < m_nBars; ++i)
+    {
+      m_bars[i].writeDisplay();
+    }
+  }
+};
+
 //Bar gauge setup
-int numBars = 24;
-Adafruit_24bargraph bar = Adafruit_24bargraph();
+/////original
+//int numLEDs = 24;
+//Adafruit_24bargraph bar = Adafruit_24bargraph();
+////should work
+//int numLEDs = 24;
+//LongBarGraph bar = LongBarGraph(1)
+////double length
+int numLEDs = 48;
+LongBarGraph bar = LongBarGraph(2);
 
 //calibration knobs setup
 int scalePot = A0;
@@ -46,8 +94,9 @@ void setup() {
   max.setTempFaultThreshholds(0.0, 3000.0);
   
   //init bar
-  bar.begin(0x70);  // pass in the address
-  for (uint8_t b=0; b<numBars; b++ ){
+  //bar.begin(0x70);  // pass in the address
+  bar.init(); 
+  for (uint8_t b=0; b<numLEDs; b++ ){
     if ((b % 3) == 0)  bar.setBar(b, LED_RED);
     if ((b % 3) == 1)  bar.setBar(b, LED_YELLOW);
     if ((b % 3) == 2)  bar.setBar(b, LED_GREEN);
@@ -61,7 +110,7 @@ void loop() {
   //read temperature
 
   double tempC = 0.0;
-  tempC = readTempThermistor();
+  tempC = readTemperatureTC();
 
   Serial.print("Temperature: "); Serial.println(tempC);
 
@@ -71,9 +120,9 @@ void loop() {
   Serial.print("tempRange: "); Serial.println(tempRange);
   Serial.print("midTemp: "); Serial.println(midTemp);
   
- double degPerBar = tempRange/numBars;
+ double degPerBar = tempRange/numLEDs;
  double startTemp = midTemp-0.5*tempRange;
- for (uint8_t b=0; b<numBars; b++) {
+ for (uint8_t b=0; b<numLEDs; b++) {
   if(startTemp+b*degPerBar<=tempC)
   {
     bar.setBar(b, LED_RED);
