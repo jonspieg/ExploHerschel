@@ -77,7 +77,7 @@ LongBarGraph bar = LongBarGraph(2);
 
 //calibration knobs setup
 int scalePot = A0;
-int shiftPot = A1;
+int initButton = 3;
 double midTemp = 23.0;
 double tempRange = 3.0;
 
@@ -114,9 +114,14 @@ void loop() {
 
   Serial.print("Temperature: "); Serial.println(tempC);
 
-  //read calibration knobs
+  //read calibration knob
   tempRange = readTempRange();
-  midTemp = readMidTemp();
+  //read init button
+  if(digitalRead(initButton))
+  {
+    midTemp = tempC;
+  }
+  
   Serial.print("tempRange: "); Serial.println(tempRange);
   Serial.print("midTemp: "); Serial.println(midTemp);
   
@@ -154,11 +159,7 @@ double readTemperatureTC()
 }
 double readTempRange()
 {
-  return mapf(analogRead(A0), 0, 1023, 0.5, 8);
-}
-double readMidTemp()
-{
-  return mapf(analogRead(A1), 0, 1023, 15, 40);
+  return mapf(analogRead(scalePot), 0, 1023, 0.5, 8);
 }
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
