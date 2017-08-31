@@ -46,13 +46,14 @@ class LongBarGraph
   {
     for(int i = 0; i < m_nBars; ++i)
     {
-      m_bars[i].begin(m_firsAddr+i);
+      m_bars[i].begin(m_firsAddr+m_nBars-1-i);
     }
+    
   }
   //==============================
   setBar(int b, int c)
   {
-    m_bars[(int)floor(m_nLEDPerBar/b)].setBar(b%m_nLEDPerBar, c);
+    m_bars[(int)floor(b/m_nLEDPerBar)].setBar(b%m_nLEDPerBar, c);
   }
   //
   writeDisplay()
