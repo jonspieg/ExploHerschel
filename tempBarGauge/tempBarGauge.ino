@@ -129,9 +129,9 @@ void loop() {
  double degPerBar = tempRange/numLEDs;
  double startTemp = midTemp-0.5*tempRange;
  for (uint8_t b=0; b<numLEDs; b++) {
-  if(startTemp+b*degPerBar<=tempC)
+  if(startTemp+b*degPerBar<tempC)
   {
-    bar.setBar(b, LED_RED);
+    bar.setBar(b, LED_YELLOW);
   }
   else
   {
@@ -139,7 +139,7 @@ void loop() {
   }
  }
  bar.writeDisplay();
- delay(50);
+ delay(20);
 }
 
 double readTemperatureTC()
