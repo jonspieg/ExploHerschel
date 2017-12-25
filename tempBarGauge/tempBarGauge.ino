@@ -28,7 +28,9 @@ class LongBarGraph
   private:
   int m_firsAddr = 0x70;
   int m_nLEDPerBar = 24;
+  boolean flipDirection = true;
   int m_nBars;
+  
   Adafruit_24bargraph* m_bars;
   
   public:
@@ -53,6 +55,10 @@ class LongBarGraph
   //==============================
   setBar(int b, int c)
   {
+    if(flipDirection)
+    {
+      b = (m_nLEDPerBar*m_nBars)-b-1;
+    }
     m_bars[(int)floor(b/m_nLEDPerBar)].setBar(b%m_nLEDPerBar, c);
   }
   //
