@@ -88,6 +88,12 @@ int initButton = 3;
 double midTemp = 23.0;
 double tempRange = 3.0;
 
+
+int tmpSpan = 50;
+double tmpWindow[tmpSpan];
+int tmpWindowAverage = 0;
+unsigned long tmpCounter = 0;
+
 // Use software SPI: CS, DI, DO, CLK
 Adafruit_MAX31856 max = Adafruit_MAX31856(10, 11, 12, 13);
 // use hardware SPI, just pass in the CS pin
@@ -118,6 +124,7 @@ void loop() {
 
   double tempC = 0.0;
   tempC = readTemperatureTC();
+  tempC = calcTmpMovingAvg(tempC);
 
   Serial.print("Temperature: "); Serial.println(tempC);
 
@@ -172,5 +179,19 @@ double readTempRange()
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
 {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+double calcTmpMovingAvg(double tmp)
+{
+  //return tmp;
+  
+  //calculate the average sensor signal over a window
+  double oldDataPt = tmpWindow[tmpCounter%(tmpSpan-1)];
+  double newDataPt = tmp;
+  tmpWindow[tmpCounter%(WMSpan-1)] = newDataPt;
+  tmpWindowAverage = tmpWindowAverage - (double)oldDataPt/tmpSpan + (double)newDataPt/tmpSpan; //updating the average over the entire window span
+  tmpCounter++;
+  
+  return tmpWindowAverage;
 }
 
