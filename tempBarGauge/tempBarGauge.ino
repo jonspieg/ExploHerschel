@@ -89,7 +89,7 @@ double midTemp = 23.0;
 double tempRange = 3.0;
 
 
-int tmpSpan = 50;
+const int tmpSpan = 50;
 double tmpWindow[tmpSpan];
 int tmpWindowAverage = 0;
 unsigned long tmpCounter = 0;
@@ -188,7 +188,7 @@ double calcTmpMovingAvg(double tmp)
   //calculate the average sensor signal over a window
   double oldDataPt = tmpWindow[tmpCounter%(tmpSpan-1)];
   double newDataPt = tmp;
-  tmpWindow[tmpCounter%(WMSpan-1)] = newDataPt;
+  tmpWindow[tmpCounter%(tmpSpan-1)] = newDataPt;
   tmpWindowAverage = tmpWindowAverage - (double)oldDataPt/tmpSpan + (double)newDataPt/tmpSpan; //updating the average over the entire window span
   tmpCounter++;
   
