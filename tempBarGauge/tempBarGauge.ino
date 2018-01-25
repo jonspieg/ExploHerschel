@@ -91,7 +91,7 @@ double tempRange = 3.0;
 
 const int tmpSpan = 50;
 double tmpWindow[tmpSpan];
-int tmpWindowAverage = 0;
+double tmpWindowAverage = 0.0;
 unsigned long tmpCounter = 0;
 
 // Use software SPI: CS, DI, DO, CLK
@@ -101,6 +101,10 @@ Adafruit_MAX31856 max = Adafruit_MAX31856(10, 11, 12, 13);
 
 void setup() {
   Serial.begin(115200);
+  
+  for(int i=0; i<tmpSpan; ++i){
+    tmpWindow[i]=0.0;
+  }
 
   max.begin();
   max.setThermocoupleType(MAX31856_TCTYPE_K);
@@ -189,7 +193,8 @@ double calcTmpMovingAvg(double tmp)
   double oldDataPt = tmpWindow[tmpCounter%(tmpSpan-1)];
   double newDataPt = tmp;
   tmpWindow[tmpCounter%(tmpSpan-1)] = newDataPt;
-  tmpWindowAverage = tmpWindowAverage - (double)oldDataPt/tmpSpan + (double)newDataPt/tmpSpan; //updating the average over the entire window span
+  tmpWindowAverage = (double)tmpSpan*tmpWindowAverage/(tmpSpan-1) - (double)oldDataPt/(tmpSpan-1); //removing the old data point from the average
+  tmpWindowAverage = (double)(tmpSpan-1)*tmpWindowAverage/tmpSpan + (double)newDataPt/tmpSpan; //adding the new data point to the average
   tmpCounter++;
   
   return tmpWindowAverage;
